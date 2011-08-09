@@ -14,6 +14,8 @@ typedef struct childnode{
     __u16 tcp_threads;              //the number of threads used for maintain and service 
     __u32 links;                    //the links of current machine
     __u32 max_links;                //the max links that current machine can afford
+    __u16 listenQ;
+    __u16 client_size;
 }childnode;
 
 /*
@@ -35,5 +37,12 @@ void realserv_start();
    tcp message handler in backend
 */
 void recv_tcp_message(struct childnode *child,int connfd,in_addr_t srcaddr);
-
+/*
+   process tcp message using select I/O model
+*/
+void select_server(struct childnode *child,int tcp_listenfd);
+/*
+   read the packet sending from frontend,used by select model
+*/
+int readPacket(struct childnode *child,int tcp_listenfd);
 #endif
