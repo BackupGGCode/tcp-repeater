@@ -84,6 +84,7 @@ void read_topnode_config(struct topnode *traffic_serv){
 __u32 
 schedule(struct topnode *traffic_serv,in_addr_t srcaddr,struct message *msg,int connfd){
     __u32 result;
+    printf("schedule start!\n");
     if(traffic_serv->sche_type == ROUND_ROBIN){
         __u32 cur_node;
         Pthread_mutex_lock(&(traffic_serv->cur_lock));
@@ -102,6 +103,7 @@ schedule(struct topnode *traffic_serv,in_addr_t srcaddr,struct message *msg,int 
         Pthread_mutex_unlock(&(traffic_serv->cur_lock));
   //      printf("try %d \n",cur_node);
         result =   round_robin_scheduling(traffic_serv->lb_hlist,cur_node,msg,connfd);
+        
         if(result ==-2){
             printf("try anther backend server!\n");
             schedule(traffic_serv,srcaddr,msg,connfd);
@@ -113,6 +115,7 @@ schedule(struct topnode *traffic_serv,in_addr_t srcaddr,struct message *msg,int 
     }
     else if(traffic_serv->sche_type == SRC_HASH)
         return srcaddr_hash_scheduling(traffic_serv->lb_hlist,srcaddr,traffic_serv->hash_size,msg,connfd);
+    printf("schedule end!\n");
     return result;
 }
 

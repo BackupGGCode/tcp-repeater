@@ -15,6 +15,7 @@ init_childnode(){
     child->state = INITIAL_STATE;
     //child->links =  0;
     child->tcp_threads = 2;
+    child->client_size = 1024;
     Pthread_mutex_init(&(child->lock),NULL);  
     return child;
 }
@@ -118,9 +119,6 @@ send_activation_message(void *arg){
 
 /*****************process tcp message ***********************/
 
-int tcp_childfd;            //the tcp server socket
-pthread_mutex_t tcp_childsock_lock = PTHREAD_MUTEX_INITIALIZER;     //the lock of tcp server socket
-
 
 /*
    tcp message handler in backend
@@ -164,26 +162,6 @@ recv_tcp_message(struct childnode *child,int connfd,in_addr_t srcaddr){
 }
 
 
-/*
-   the process program of every single thread,used for tcp
-*/
-void *
-child_tcp_thread(void *arg){
-    struct childnode *child = (struct childnode*)arg;
-    int connfd;
-    socklen_t clilen;
-    struct sockaddr_in cliaddr;
-    for(;;){
-        clilen = sizeof(struct sockaddr_in);
-        Pthread_mutex_lock(&tcp_childsock_lock);
-        connfd = Accept(tcp_childfd,(struct sockaddr*)&cliaddr,&clilen);
-        Pthread_mutex_unlock(&tcp_childsock_lock);
-//        printf("the message was from %s\n",inet_ntoa(cliaddr.sin_addr));
-        recv_tcp_message(child,connfd,cliaddr.sin_addr.s_addr);
-        close(connfd);
-    }
-    return NULL;
-}
 
 /*
    the tcp service program entry, this function will create a server socket
@@ -193,13 +171,12 @@ void *
 process_tcp_message(void *arg){
     struct childnode *child = (struct childnode*)arg;
     struct sockaddr_in serv;
-    int i,optval =1;
-    pthread_t tid;
+    int optval =1;
     bzero(&serv,sizeof(struct sockaddr_in));
     serv.sin_family = AF_INET;
     serv.sin_port = htons(TCP_PORT);
     serv.sin_addr.s_addr = htonl(INADDR_ANY);
-    tcp_childfd = socket(AF_INET,SOCK_STREAM,0);
+    int tcp_childfd = socket(AF_INET,SOCK_STREAM,0);
     if(tcp_childfd<0){
         perror("socket error");
         exit(1);
@@ -217,11 +194,102 @@ process_tcp_message(void *arg){
         perror("listen error");
         exit(1);
     }
-    for(i=0;i<child->tcp_threads;i++){
-        Pthread_create(&tid,NULL,&child_tcp_thread,(void*)child);
-    }
+    select_server(child,tcp_childfd);
     return NULL;    
 }
+
+void select_server(struct childnode *child,int tcp_listenfd){
+   int maxfd,maxIndex,i;
+   int *client = (int*)malloc(sizeof(int) * child->client_size);
+   struct sockaddr_in cliaddr;
+   int clilen;
+   fd_set allset,rset;
+   FD_ZERO(&allset);
+   FD_ZERO(&rset);
+   FD_SET(tcp_listenfd,&allset);
+   maxfd = tcp_listenfd +1;
+   maxIndex = 0;
+   for( i=0;i<child->client_size;i++)
+       client[i]=-1;
+   int nready;
+   for(;;){
+       rset = allset;
+       nready = select(maxfd,&rset,NULL,NULL,NULL);
+       if(FD_ISSET(tcp_listenfd,&rset)){
+           clilen = sizeof(cliaddr);
+           int connfd = Accept(tcp_listenfd,(struct sockaddr*) & cliaddr,&clilen);
+           for(i=0;i<child->client_size;i++){
+                if(client[i]==-1)
+                    break;
+           }
+           client[i] = connfd;
+           if( connfd > maxfd)
+               maxfd = connfd;
+           if( i> maxIndex)
+               maxIndex = i;
+           FD_SET(connfd,&allset);
+           if(--nready <=0)
+               continue;
+       }
+       for(i=0;i<=maxIndex;i++) {
+           if(client[i]==-1){
+               continue;
+           }
+           if(FD_ISSET(client[i],&rset)){
+                int flag = readPacket(child,client[i]);
+                printf("read packet over!\n");
+                if(flag ==0){
+                    close(client[i]);
+                    FD_CLR(client[i],&allset);
+                    client[i]=-1;
+                }
+                nready--;
+                if(nready<=0)
+                    break;
+           }
+       }
+   }
+}
+
+
+int readPacket(struct childnode *child,int connfd){
+    char buf[PACKET_LEN];
+    int len;
+    struct message *msg;
+    struct in_addr addr;
+//    printf("receive message from %s\n",inet_ntoa(addr));
+    for(;;){
+        len = Recv(connfd,(void*)buf,PACKET_LEN,0);
+        addr.s_addr = msg->info.srcNode;
+        if(len ==0){
+            printf("the connection was closed by %s!\n",inet_ntoa(addr));
+            return 0;
+        }else if(len <0){
+            break;
+        }
+        msg = (struct message*)buf;
+        switch(msg->msgtype){
+            case TCP_FAULT_QUERY:
+                printf("receive TCP_FAULT_QUERY message\n");
+                msg->msgtype = TCP_FAULT_QUERY_ACK;
+                Send(connfd,msg,sizeof(struct message),0);
+                break;
+            case TCP_SERV:
+                printf("receive TCP_SERV message\n");
+                msg->msgtype =TCP_SERV_REPLY;
+                while(send(connfd,msg,sizeof(struct message),0)!=sizeof(struct message)){
+                        continue;
+                }
+                printf("send TCP_SERV_REPLY message\n");
+                break;
+            default:
+                break;
+        }
+    }
+    //close(connfd);
+    return 0;
+}
+
 
 /*
    the key function that start the service of backend machine,
