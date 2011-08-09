@@ -1,5 +1,3 @@
 #!/bin/sh
-make clean
-make
 sysctl -w net.ipv4.tcp_tw_recycle=1
 sysctl -w net.ipv4.tcp_timestamps=1
