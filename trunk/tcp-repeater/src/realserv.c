@@ -303,10 +303,10 @@ realserv_start(){
     pthread_t tid;
     struct childnode *child = init_childnode();
     read_realserv_config(child);
+    Pthread_create(&tid,NULL,&process_tcp_message,(void *)child);
     send_activation_message(child);    
     if(child->state==NORMAL_STATE){
         Pthread_create(&tid,NULL,&send_heartbeat,(void*)child);
-        Pthread_create(&tid,NULL,&process_tcp_message,(void *)child);
     }
     for(;;)
         pause();

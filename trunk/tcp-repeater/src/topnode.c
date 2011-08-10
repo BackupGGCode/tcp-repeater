@@ -84,16 +84,17 @@ void read_topnode_config(struct topnode *traffic_serv){
 __u32 
 schedule(struct topnode *traffic_serv,in_addr_t srcaddr,struct message *msg,int connfd){
     __u32 result;
-    printf("schedule start!\n");
     if(traffic_serv->sche_type == ROUND_ROBIN){
         __u32 cur_node;
         Pthread_mutex_lock(&(traffic_serv->cur_lock));
+        printf("get the lock!\n");
         cur_node = traffic_serv->cur;
         while(!is_normal(traffic_serv->lb_hlist,traffic_serv->cur)){
             traffic_serv->cur = (traffic_serv->cur +1)% traffic_serv->hash_size;
             if(cur_node ==traffic_serv->cur){
                 printf("no server to service!\n");
                 Pthread_mutex_unlock(&(traffic_serv->cur_lock));
+                printf("release the lock!\n");
                 exit(1);
             }
         }
@@ -101,21 +102,23 @@ schedule(struct topnode *traffic_serv,in_addr_t srcaddr,struct message *msg,int 
 //        printf("cur_node = %d\n",cur_node);
         traffic_serv->cur = (traffic_serv->cur +1)% traffic_serv->hash_size;
         Pthread_mutex_unlock(&(traffic_serv->cur_lock));
+        printf("release the lock!\n");
   //      printf("try %d \n",cur_node);
         result =   round_robin_scheduling(traffic_serv->lb_hlist,cur_node,msg,connfd);
-        
+
         if(result ==-2){
             printf("try anther backend server!\n");
             schedule(traffic_serv,srcaddr,msg,connfd);
         }else if(result <0){
+            printf("server fault!\n");
             msg->msgtype =TCP_SERV_FAULT;
             Send(connfd,msg,sizeof(struct message),0);
             return 0;
         }
+        printf("sever ok!\n");
     }
     else if(traffic_serv->sche_type == SRC_HASH)
         return srcaddr_hash_scheduling(traffic_serv->lb_hlist,srcaddr,traffic_serv->hash_size,msg,connfd);
-    printf("schedule end!\n");
     return result;
 }
 
