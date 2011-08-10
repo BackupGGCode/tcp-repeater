@@ -60,12 +60,16 @@ round_robin_scheduling(struct lb_struct *lb_hlist,__u32 cur,struct message *msg,
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(TCP_PORT);
 	servaddr.sin_addr.s_addr = lb_hlist[cur].ipaddr;
+    struct in_addr addr;
+    addr.s_addr = lb_hlist[cur].ipaddr;
+    printf("choose the machine:%s\n",inet_ntoa(addr));
     if(connect(sockfd,(struct sockaddr*)&servaddr,sizeof(servaddr))<0){
         perror("connect error");
         close(sockfd);
         return -2;
 
     }
+    printf("connect ok!\n");
     while(1){
         while(send(sockfd,msg,sizeof(struct message),0)!=sizeof(struct message)){
             continue;
@@ -357,6 +361,7 @@ process_message_lb(struct lb_struct *lb_hlist,__u32 hash_size,in_addr_t srcaddr,
                 }
                 Pthread_mutex_lock(&(lb_hlist[i].lb_lock));
                 lb_hlist[i].state = NORMAL_STATE;
+                lb_hlist[i].count = 0;
                 Pthread_mutex_unlock(&(lb_hlist[i].lb_lock));
             }
             msg->msgtype = TCP_ACTIVATION_ACK;
