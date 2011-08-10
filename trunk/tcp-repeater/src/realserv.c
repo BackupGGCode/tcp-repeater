@@ -98,7 +98,10 @@ send_activation_message(void *arg){
 
     msg.state = child->state;
     Pthread_mutex_unlock(&(child->lock));
-    Connect(sockfd,(struct sockaddr*)&serv,sizeof(serv));
+    if(0!=connect(sockfd,(struct sockaddr*)&serv,sizeof(serv))){
+		perror("connect error");
+		exit(1);
+	}
     Send(sockfd,&msg,sizeof(msg),0);
     printf("register to front server......\n");
     int n= Recv(sockfd,&msg,sizeof(msg),0);
