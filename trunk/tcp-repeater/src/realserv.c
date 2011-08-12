@@ -263,7 +263,8 @@ int readPacket(struct childnode *child,int connfd){
 //    printf("receive message from %s\n",inet_ntoa(addr));
     for(;;){
         len = Recv(connfd,(void*)buf,PACKET_LEN,0);
-        addr.s_addr = msg->info.srcNode;
+        msg = (struct message *)buf;
+		addr.s_addr = msg->info.srcNode;
         if(len ==0){
             printf("the connection was closed by %s!\n",inet_ntoa(addr));
             return 0;
