@@ -102,16 +102,25 @@ send_activation_message(void *arg){
 		perror("connect error");
 		exit(1);
 	}
-    Send(sockfd,&msg,sizeof(msg),0);
-    printf("register to front server......\n");
-    int n= Recv(sockfd,&msg,sizeof(msg),0);
-    if(n != sizeof(msg))
-        err_quit("receive activation ack message error");
-    if(msg.msgtype ==TCP_ACTIVATION_ACK){
-        Pthread_mutex_lock(&(child->lock));
-        child->id = msg.child_id;
-        child->state = NORMAL_STATE;
-        Pthread_mutex_unlock(&(child->lock));
+    while(1){
+        int len =send(sockfd,&msg,sizeof(msg),0);
+        if(len != sizeof(msg)){
+            perror("send error");
+            continue;
+        }
+        printf("register to front server......\n");
+        int n= recv(sockfd,&msg,sizeof(msg),0);
+        if(n != sizeof(msg)){
+            perror("recv error");
+            continue;
+        }
+        if(msg.msgtype ==TCP_ACTIVATION_ACK){
+            Pthread_mutex_lock(&(child->lock));
+            child->id = msg.child_id;
+            child->state = NORMAL_STATE;
+            Pthread_mutex_unlock(&(child->lock));
+            break;
+        }
     }
     //printf("Get activation ack message from traffic server !\n");
     printf("the server is in normal state!\n");
