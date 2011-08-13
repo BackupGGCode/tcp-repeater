@@ -203,6 +203,7 @@ process_tcp_message(void *arg){
 
 void select_server(struct childnode *child,int tcp_listenfd){
    int maxfd,maxIndex,i;
+   struct timeval timeout;
    int *client = (int*)malloc(sizeof(int) * child->client_size);
    struct sockaddr_in cliaddr;
    int clilen;
@@ -214,17 +215,32 @@ void select_server(struct childnode *child,int tcp_listenfd){
    maxIndex = 0;
    for( i=0;i<child->client_size;i++)
        client[i]=-1;
+   timeout.tv_sec = 20;
+   timeout.tv_usec=0;
    int nready;
+   printf("the backend server ready!\n");
    for(;;){
        rset = allset;
-       nready = select(maxfd,&rset,NULL,NULL,NULL);
-       if(FD_ISSET(tcp_listenfd,&rset)){
+       nready = select(maxfd,&rset,NULL,NULL,&timeout);
+	   if(nready ==0)
+		   continue;
+	   printf("nready = %d\n",nready);	
+	   if(FD_ISSET(tcp_listenfd,&rset)){
            clilen = sizeof(cliaddr);
            int connfd = Accept(tcp_listenfd,(struct sockaddr*) & cliaddr,&clilen);
-           for(i=0;i<child->client_size;i++){
+		   if(connfd ==-1){
+				perror("accept error");
+				continue;
+		   }
+		   printf("get a request,Accept it!\n");
+		   for(i=0;i<child->client_size;i++){
                 if(client[i]==-1)
                     break;
            }
+		   if(i>=child->client_size){
+			   printf("too few client connfd buffer!\n");
+			   exit(1);
+		   }
            client[i] = connfd;
            if( connfd > maxfd)
                maxfd = connfd;
@@ -235,6 +251,7 @@ void select_server(struct childnode *child,int tcp_listenfd){
                continue;
        }
        for(i=0;i<=maxIndex;i++) {
+		   printf("receive packet...\n");
            if(client[i]==-1){
                continue;
            }
@@ -256,22 +273,26 @@ void select_server(struct childnode *child,int tcp_listenfd){
 
 
 int readPacket(struct childnode *child,int connfd){
+	printf("read packet!\n");
     char buf[PACKET_LEN];
     int len;
     struct message *msg;
     struct in_addr addr;
 //    printf("receive message from %s\n",inet_ntoa(addr));
     for(;;){
+		printf("just after for...\n");
         len = Recv(connfd,(void*)buf,PACKET_LEN,0);
         msg = (struct message *)buf;
 		addr.s_addr = msg->info.srcNode;
-        if(len ==0){
+        printf("if...\n");
+		if(len ==0){
             printf("the connection was closed by %s!\n",inet_ntoa(addr));
             return 0;
         }else if(len <0){
             break;
         }
         msg = (struct message*)buf;
+		printf("swich ...\n");
         switch(msg->msgtype){
             case TCP_FAULT_QUERY:
                 printf("receive TCP_FAULT_QUERY message\n");

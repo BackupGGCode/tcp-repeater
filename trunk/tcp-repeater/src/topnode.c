@@ -31,6 +31,7 @@ init_topnode(){
     traffic_serv->state = INITIAL_STATE;
     traffic_serv->node_type = MS;
     traffic_serv->hash_size = 0;
+	traffic_serv->client_size = 1024;
     traffic_serv->tcp_threads = 10;
     traffic_serv->udp_threads = 1;
     traffic_serv->max_count  = 5;
@@ -133,13 +134,10 @@ receive_heartbeat(struct topnode *traffic_serv,__u32 id){
 /*************process tcp messages ***************/
 
 
-int tcp_listenfd;           //the tcp socket of frontend machine
-pthread_mutex_t tcp_sockfd_lock = PTHREAD_MUTEX_INITIALIZER;    //the lock of tcp socket
-
 /*
    the tcp message handler of frontend machine
 */
-void receive_tcp_message(struct topnode* traffic_serv,int connfd,in_addr_t srcaddr){
+int receive_tcp_message(struct topnode* traffic_serv,int connfd,in_addr_t srcaddr){
     char buf[PACKET_LEN];
     int len;
     struct message *msg;
@@ -147,11 +145,9 @@ void receive_tcp_message(struct topnode* traffic_serv,int connfd,in_addr_t srcad
     addr.s_addr = srcaddr;
     for(;;){
         len = Recv(connfd,(void*)buf,PACKET_LEN,0);
-        if(len ==0){
+        if(len <=0){
             //printf("the connection was closed by %s!\n",inet_ntoa(addr));
-            break;
-        }else if(len <0){
-            break;
+            return 0;
         }
         msg = (struct message*)buf;
         switch(msg->msgtype){
@@ -185,7 +181,7 @@ void receive_tcp_message(struct topnode* traffic_serv,int connfd,in_addr_t srcad
 
 /*
    the start entry of every tcp thread
-*/
+
 void *
 tcp_thread(void *arg){
     struct topnode *traffic_serv  = (struct topnode *)arg;
@@ -202,6 +198,8 @@ tcp_thread(void *arg){
         close(connfd);
     }
 }
+*/
+
 
 /*
    the tcp service program entry,this function will create a server socket and create many threads to process tcp message
@@ -209,11 +207,10 @@ tcp_thread(void *arg){
 
 void* 
 monitor_process(void * arg){
-    int i;
+	int tcp_listenfd;
     int optval=1;
     struct topnode *traffic_serv = (struct topnode *)arg;
     struct sockaddr_in serv;
-    pthread_t tid;
     bzero(&serv,sizeof(struct sockaddr_in));
     serv.sin_family = AF_INET;
     serv.sin_port = htons(TCP_PORT);
@@ -236,12 +233,75 @@ monitor_process(void * arg){
         perror("listen error");
         exit(1);
     }
-    for(i=0;i<traffic_serv->tcp_threads;i++){
+    /*for(i=0;i<traffic_serv->tcp_threads;i++){
         Pthread_create(&tid,NULL,&tcp_thread,(void*)traffic_serv);
     }
+	*/
+	select_tcpserver(traffic_serv,tcp_listenfd);
     return NULL;
 }
 
+void select_tcpserver(struct topnode * traffic_serv,int tcp_listenfd){
+	int maxfd,maxIndex,i;
+	fd_set rset,allset;
+	struct sockaddr_in cliaddr;
+	int clilen;
+	int *client =(int *)malloc(sizeof(int) * traffic_serv->client_size);
+	int *client_addr = (int *)malloc(sizeof(int) * traffic_serv->client_size);
+	FD_ZERO(&rset);
+	FD_ZERO(&allset);
+	FD_SET(tcp_listenfd,&allset);
+	maxfd = tcp_listenfd +1;
+	maxIndex =0;
+	for(i=0;i<traffic_serv->client_size;i++)
+		client[i]=-1;
+	int nready;
+	for(;;){
+		rset = allset;
+		nready = select(maxfd,&rset,NULL,NULL,NULL);
+		if(FD_ISSET(tcp_listenfd,&rset)){
+			clilen = sizeof(struct sockaddr_in);
+			int connfd = accept(tcp_listenfd,(struct sockaddr*)&cliaddr,&clilen);
+			if(connfd <0){
+				perror("accept error");
+				continue;
+			}
+			for(i=0;i<traffic_serv->client_size;i++){
+				if(client[i]==-1)
+					break;
+			}
+			if(i==traffic_serv->client_size){
+				printf("too few client buffer!\n");
+				return ;
+			}
+			client[i]= connfd;
+			client_addr[i] = cliaddr.sin_addr.s_addr;
+			if(connfd > maxfd)
+				maxfd = connfd;
+			if( i > maxIndex)
+				maxIndex = i;
+			FD_SET(connfd,&allset);
+			if(--nready <=0)
+				continue;
+		}//if over
+		for(i=0;i<=maxIndex;i++){
+			if(client[i]==-1)
+				continue;
+			if(FD_ISSET(client[i],&rset)){
+				int flag = receive_tcp_message(traffic_serv,client[i],client_addr[i]);	
+                printf("read packet over!\n");
+                if(flag ==0){
+                    close(client[i]);
+                    FD_CLR(client[i],&allset);
+                    client[i]=-1;
+                }
+                nready--;
+                if(nready<=0)
+                    break;
+			}
+		}//for over
+	}
+}
 
 /***************process udp message****************/
 /*

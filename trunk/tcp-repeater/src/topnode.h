@@ -17,7 +17,8 @@ typedef struct topnode{
     __u32 tcp_threads;              //the number of threads used for maintenance
     __u32 udp_threads;              //the number of thread used for heartbeat
     __u32 max_count;                //maxinum heart rate count,more than that the machine is fault
-    struct lb_struct *lb_hlist;     //the struct of backend machine
+    __u32 client_size;
+	struct lb_struct *lb_hlist;     //the struct of backend machine
     __u32 hash_size;                //the number of backend machine
 }topnode;
 
@@ -46,6 +47,8 @@ void print_lb_tree(struct topnode *traffic_serv);
     scheduling function for client request  
 */
 in_addr_t schedule(struct topnode *traffic_serv,in_addr_t srcaddr,struct message *msg,int connfd);
+
+void select_tcpserver(struct topnode * traffic_serv,int tcp_listenfd);
 /*
    heartbeat message handler
 */
