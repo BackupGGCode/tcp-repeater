@@ -69,13 +69,20 @@ round_robin_scheduling(struct lb_struct *lb_hlist,__u32 cur,struct message *msg,
         return -2;
 
     }
-    printf("connect ok!\n");
     while(1){
-        while(send(sockfd,msg,sizeof(struct message),0)!=sizeof(struct message)){
+        /*while(send(sockfd,msg,sizeof(struct message),0)!=sizeof(struct message)){
+            continue;
+        }
+        */
+
+        len = send(sockfd,msg,sizeof(struct message),0);
+        if(len !=sizeof(struct message)){
             continue;
         }
         if((len = recv(sockfd,(void*)msg,sizeof(struct message),0))!=sizeof(struct message)){
             continue;
+        }else{
+            
         }
         //printf("len = %d,sizeof struct message = %d\n",len,sizeof(struct message));
         if(msg->msgtype !=TCP_SERV_REPLY){
@@ -199,35 +206,6 @@ srcaddr_hash_scheduling(struct lb_struct * lb_hlist,in_addr_t srcaddr,__u32 hash
     }
     close(sockfd);
     return 0;
-    /*
-    struct sockaddr_in servaddr;
-    bzero(&servaddr,sizeof(servaddr));
-    Pthread_mutex_lock(&(lb_hlist[cur].lb_lock));
-    if(lb_hlist[cur].connfd ==-1){
-	    servaddr.sin_family = AF_INET;
-	    servaddr.sin_port = htons(TCP_PORT);
-	    servaddr.sin_addr.s_addr = lb_hlist[cur].ipaddr;
-	    lb_hlist[cur].connfd = Socket(AF_INET,SOCK_STREAM,0);
-	    Send(lb_hlist[cur].connfd,msg,sizeof(struct message),0);
-	 
-    }else{
-        if(send(lb_hlist[cur].connfd,msg,sizeof(struct message),0) != sizeof(struct message)){
-	        close(lb_hlist[cur].connfd);
-	        servaddr.sin_family = AF_INET;
-	        servaddr.sin_port = htons(TCP_PORT);
-	        servaddr.sin_addr.s_addr = lb_hlist[cur].ipaddr;
-	        lb_hlist[cur].connfd = Socket(AF_INET,SOCK_STREAM,0);
-	    }
-    }
-    Recv(lb_hlist[cur].connfd,(void*)msg,sizeof(struct message),0);
-    Pthread_mutex_unlock(&(lb_hlist[cur].lb_lock));
-    if(msg->msgtype==TCP_SERV_REPLY){
-	    return sizeof(struct message);
-    }else{
-	    printf("receive wrong message!\n");
-	    return 0;
-    }
-    */  
 }
 
 /*
