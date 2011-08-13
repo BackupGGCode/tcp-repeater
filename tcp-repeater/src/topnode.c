@@ -233,10 +233,6 @@ monitor_process(void * arg){
         perror("listen error");
         exit(1);
     }
-    /*for(i=0;i<traffic_serv->tcp_threads;i++){
-        Pthread_create(&tid,NULL,&tcp_thread,(void*)traffic_serv);
-    }
-	*/
 	select_tcpserver(traffic_serv,tcp_listenfd);
     return NULL;
 }
@@ -245,6 +241,7 @@ void select_tcpserver(struct topnode * traffic_serv,int tcp_listenfd){
 	int maxfd,maxIndex,i;
 	fd_set rset,allset;
 	struct sockaddr_in cliaddr;
+    struct in_addr addr;
 	int clilen;
 	int *client =(int *)malloc(sizeof(int) * traffic_serv->client_size);
 	int *client_addr = (int *)malloc(sizeof(int) * traffic_serv->client_size);
@@ -259,9 +256,12 @@ void select_tcpserver(struct topnode * traffic_serv,int tcp_listenfd){
 	for(;;){
 		rset = allset;
 		nready = select(maxfd,&rset,NULL,NULL,NULL);
+        printf("select over,nready = %d\n",nready);
 		if(FD_ISSET(tcp_listenfd,&rset)){
 			clilen = sizeof(struct sockaddr_in);
 			int connfd = accept(tcp_listenfd,(struct sockaddr*)&cliaddr,&clilen);
+            addr.s_addr = cliaddr.sin_addr.s_addr;
+            printf("get connection from %s\n",inet_ntoa(addr));
 			if(connfd <0){
 				perror("accept error");
 				continue;
@@ -289,7 +289,6 @@ void select_tcpserver(struct topnode * traffic_serv,int tcp_listenfd){
 				continue;
 			if(FD_ISSET(client[i],&rset)){
 				int flag = receive_tcp_message(traffic_serv,client[i],client_addr[i]);	
-                printf("read packet over!\n");
                 if(flag ==0){
                     close(client[i]);
                     FD_CLR(client[i],&allset);
