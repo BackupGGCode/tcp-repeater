@@ -62,7 +62,7 @@ main(int argc, char *argv[]){
     serv.sin_addr.s_addr = inet_addr(argv[4]);
     serv.sin_port =htons(TCP_PORT);
     serv.sin_family=AF_INET;
-    printf("the thread number = %d\t server ip = %s\n",thread_number,inet_ntoa(serv.sin_addr));
+    printf("the thread number = %d\t,port number = %d\t, server ip = %s\n",thread_number,TCP_PORT,inet_ntoa(serv.sin_addr));
     struct message msg;
     msg.msgtype = TCP_SERV;
     msg.info.srcNode = serv.sin_addr.s_addr;
