@@ -257,15 +257,14 @@ void select_tcpserver(struct topnode * traffic_serv,int tcp_listenfd){
 	for(;;){
         timeout.tv_sec = 2;
         timeout.tv_usec = 0;
-        printf("start select ...\n");
 		rset = allset;
-		nready = select(maxfd,&rset,NULL,NULL,&timeout);
+		nready = select(maxfd+1,&rset,NULL,NULL,&timeout);
         if(nready <=0)
             continue;
         printf("select over,nready = %d\n",nready);
 		if(FD_ISSET(tcp_listenfd,&rset)){
 			clilen = sizeof(struct sockaddr_in);
-			int connfd = accept(tcp_listenfd,(struct sockaddr*)&cliaddr,&clilen);
+			int connfd = accept(tcp_listenfd,(struct sockaddr*)&cliaddr,(socklen_t*)&clilen);
             addr.s_addr = cliaddr.sin_addr.s_addr;
             printf("get connection from %s\n",inet_ntoa(addr));
 			if(connfd <0){
@@ -386,9 +385,9 @@ topnode_start(){
     read_topnode_config(traffic_serv);
     print_lb_tree(traffic_serv);
     printf("start listening...\n");
-    monitor_process(traffic_serv);
+    //monitor_process(traffic_serv);
     Pthread_create(&tid,NULL,&check_children_alive,(void*)traffic_serv);
-    //Pthread_create(&tid,NULL,&monitor_process,(void*)traffic_serv);
+    Pthread_create(&tid,NULL,&monitor_process,(void*)traffic_serv);
     Pthread_create(&tid,NULL,&heartbeat_process,(void*)traffic_serv);
     //Pthread_create(&tid,NULL,&serv_process,(void*)traffic_serv);
     for(;;)

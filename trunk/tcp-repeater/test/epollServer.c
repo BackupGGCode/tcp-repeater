@@ -18,7 +18,7 @@ int addNewClient(int epfd,int listenfd){
     struct epoll_event ev;
     struct sockaddr_in cliaddr;
     int len  = sizeof(cliaddr);
-    int connfd =  accept(listenfd,(struct sockaddr *)&cliaddr,&len);
+    int connfd =  accept(listenfd,(struct sockaddr *)&cliaddr,(socklen_t*)&len);
     if(connfd <0){
         perror("accept error!");
         return -1;

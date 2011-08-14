@@ -3,7 +3,7 @@
 #include<unistd.h>
 #include<strings.h>
 #include<signal.h>
-
+#include<pthread.h>
 #include<sys/socket.h>
 #include<sys/types.h>
 #include<sys/times.h>
