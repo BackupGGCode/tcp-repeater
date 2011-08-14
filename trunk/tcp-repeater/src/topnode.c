@@ -241,6 +241,7 @@ void select_tcpserver(struct topnode * traffic_serv,int tcp_listenfd){
 	int maxfd,maxIndex,i;
 	fd_set rset,allset;
 	struct sockaddr_in cliaddr;
+    struct timeval timeout;
     struct in_addr addr;
 	int clilen;
 	int *client =(int *)malloc(sizeof(int) * traffic_serv->client_size);
@@ -254,8 +255,13 @@ void select_tcpserver(struct topnode * traffic_serv,int tcp_listenfd){
 		client[i]=-1;
 	int nready;
 	for(;;){
+        timeout.tv_sec = 2;
+        timeout.tv_usec = 0;
+        printf("start select ...\n");
 		rset = allset;
-		nready = select(maxfd,&rset,NULL,NULL,NULL);
+		nready = select(maxfd,&rset,NULL,NULL,&timeout);
+        if(nready <=0)
+            continue;
         printf("select over,nready = %d\n",nready);
 		if(FD_ISSET(tcp_listenfd,&rset)){
 			clilen = sizeof(struct sockaddr_in);
