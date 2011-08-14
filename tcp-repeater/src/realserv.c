@@ -230,13 +230,13 @@ void select_server(struct childnode *child,int tcp_listenfd){
    printf("the backend server ready!\n");
    for(;;){
        rset = allset;
-       nready = select(maxfd,&rset,NULL,NULL,&timeout);
+       nready = select(maxfd+1,&rset,NULL,NULL,&timeout);
 	   if(nready ==0)
 		   continue;
 	   printf("nready = %d\n",nready);	
 	   if(FD_ISSET(tcp_listenfd,&rset)){
            clilen = sizeof(cliaddr);
-           int connfd = Accept(tcp_listenfd,(struct sockaddr*) & cliaddr,&clilen);
+           int connfd = Accept(tcp_listenfd,(struct sockaddr*) & cliaddr,(socklen_t*)&clilen);
 		   if(connfd ==-1){
 				perror("accept error");
 				continue;
