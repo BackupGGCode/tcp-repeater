@@ -79,11 +79,16 @@ round_robin_scheduling(struct lb_struct *lb_hlist,__u32 cur,struct message *msg,
         if(len !=sizeof(struct message)){
             continue;
         }
-        if((len = recv(sockfd,(void*)msg,sizeof(struct message),0))!=sizeof(struct message)){
-            continue;
-        }else{
-            
+        printf("send ok!\n");
+        while((len = recv(sockfd,(void*)msg,sizeof(struct message),MSG_DONTWAIT))!=sizeof(struct message)){
+            if(errno ==ECONNRESET){
+                perror("recv error");
+                return -2;
+            }else
+                continue;
         }
+        printf("recv ok!\n");
+
         //printf("len = %d,sizeof struct message = %d\n",len,sizeof(struct message));
         if(msg->msgtype !=TCP_SERV_REPLY){
             printf("receive TCP_SERV_REPLY  message error,it is %d\n",msg->msgtype);
