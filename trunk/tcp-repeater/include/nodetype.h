@@ -32,4 +32,6 @@ CopyRight (C) Allen
 
 #define ROUND_ROBIN 0X0001
 #define SRC_HASH    0X0002
+
+#define TIME_OUT    2
 #endif

@@ -282,26 +282,21 @@ void select_server(struct childnode *child,int tcp_listenfd){
 
 
 int readPacket(struct childnode *child,int connfd){
-	printf("read packet!\n");
     char buf[PACKET_LEN];
     int len;
     struct message *msg;
     struct in_addr addr;
 //    printf("receive message from %s\n",inet_ntoa(addr));
     for(;;){
-		printf("just after for...\n");
         len = Recv(connfd,(void*)buf,PACKET_LEN,0);
         msg = (struct message *)buf;
 		addr.s_addr = msg->info.srcNode;
-        printf("if...\n");
 		if(len ==0){
             printf("the connection was closed by %s!\n",inet_ntoa(addr));
+			close(connfd);
             return 0;
-        }else if(len <0){
-            break;
         }
         msg = (struct message*)buf;
-		printf("swich ...\n");
         switch(msg->msgtype){
             case TCP_FAULT_QUERY:
                 printf("receive TCP_FAULT_QUERY message\n");
