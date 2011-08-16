@@ -63,7 +63,7 @@ round_robin_scheduling(struct lb_struct *lb_hlist,__u32 cur,struct message *msg,
     struct in_addr addr;
     addr.s_addr = lb_hlist[cur].ipaddr;
     printf("choose the machine:%s\n",inet_ntoa(addr));
-    if(connect(sockfd,(struct sockaddr*)&servaddr,sizeof(servaddr))<0){
+    if(connect_nonb(sockfd,(struct sockaddr*)&servaddr,sizeof(servaddr),TIME_OUT)<0){
         perror("connect error");
         close(sockfd);
         return -2;
