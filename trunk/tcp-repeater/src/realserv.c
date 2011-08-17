@@ -227,13 +227,11 @@ void select_server(struct childnode *child,int tcp_listenfd){
    timeout.tv_sec = 20;
    timeout.tv_usec=0;
    int nready;
-   printf("the backend server ready!\n");
    for(;;){
        rset = allset;
        nready = select(maxfd+1,&rset,NULL,NULL,&timeout);
 	   if(nready ==0)
 		   continue;
-	   printf("nready = %d\n",nready);	
 	   if(FD_ISSET(tcp_listenfd,&rset)){
            clilen = sizeof(cliaddr);
            int connfd = Accept(tcp_listenfd,(struct sockaddr*) & cliaddr,(socklen_t*)&clilen);
@@ -241,7 +239,6 @@ void select_server(struct childnode *child,int tcp_listenfd){
 				perror("accept error");
 				continue;
 		   }
-		   printf("get a request,Accept it!\n");
 		   for(i=0;i<child->client_size;i++){
                 if(client[i]==-1)
                     break;
@@ -260,7 +257,6 @@ void select_server(struct childnode *child,int tcp_listenfd){
                continue;
        }
        for(i=0;i<=maxIndex;i++) {
-		   printf("receive packet...\n");
            if(client[i]==-1){
                continue;
            }

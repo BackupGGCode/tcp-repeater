@@ -26,14 +26,12 @@ connect_nonb(int sockfd, const struct  sockaddr *saptr, socklen_t salen, int nse
 	wset = rset;
 	tval.tv_sec = nsec;
 	tval.tv_usec = 0;
-
 	if ( (n = select(sockfd+1, &rset, &wset, NULL,
 					 nsec ? &tval : NULL)) == 0) {
 		close(sockfd);		/* timeout */
 		errno = ETIMEDOUT;
 		return(-1);
 	}
-
 	if (FD_ISSET(sockfd, &rset) || FD_ISSET(sockfd, &wset)) {
 		len = sizeof(error);
 		if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)

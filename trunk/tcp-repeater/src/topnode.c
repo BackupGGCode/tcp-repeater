@@ -88,7 +88,6 @@ schedule(struct topnode *traffic_serv,in_addr_t srcaddr,struct message *msg,int 
     if(traffic_serv->sche_type == ROUND_ROBIN){
         __u32 cur_node;
         Pthread_mutex_lock(&(traffic_serv->cur_lock));
-        printf("get the lock!\n");
         cur_node = traffic_serv->cur;
         while(!is_normal(traffic_serv->lb_hlist,traffic_serv->cur)){
             traffic_serv->cur = (traffic_serv->cur +1)% traffic_serv->hash_size;
@@ -103,7 +102,6 @@ schedule(struct topnode *traffic_serv,in_addr_t srcaddr,struct message *msg,int 
 //        printf("cur_node = %d\n",cur_node);
         traffic_serv->cur = (traffic_serv->cur +1)% traffic_serv->hash_size;
         Pthread_mutex_unlock(&(traffic_serv->cur_lock));
-        printf("release the lock!\n");
   //      printf("try %d \n",cur_node);
         result =   round_robin_scheduling(traffic_serv->lb_hlist,cur_node,msg,connfd);
 
@@ -116,7 +114,6 @@ schedule(struct topnode *traffic_serv,in_addr_t srcaddr,struct message *msg,int 
             Send(connfd,msg,sizeof(struct message),0);
             return 0;
         }
-        printf("sever ok!\n");
     }
     else if(traffic_serv->sche_type == SRC_HASH)
         return srcaddr_hash_scheduling(traffic_serv->lb_hlist,srcaddr,traffic_serv->hash_size,msg,connfd);
@@ -384,7 +381,6 @@ topnode_start(){
     traffic_serv = init_topnode();
     read_topnode_config(traffic_serv);
     print_lb_tree(traffic_serv);
-    printf("start listening...\n");
     //monitor_process(traffic_serv);
     Pthread_create(&tid,NULL,&check_children_alive,(void*)traffic_serv);
     Pthread_create(&tid,NULL,&monitor_process,(void*)traffic_serv);
