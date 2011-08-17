@@ -69,6 +69,7 @@ round_robin_scheduling(struct lb_struct *lb_hlist,__u32 cur,struct message *msg,
         return -2;
 
     }
+    printf("connect ok!\n");
     while(1){
         /*while(send(sockfd,msg,sizeof(struct message),0)!=sizeof(struct message)){
             continue;
@@ -79,7 +80,6 @@ round_robin_scheduling(struct lb_struct *lb_hlist,__u32 cur,struct message *msg,
         if(len !=sizeof(struct message)){
             continue;
         }
-        printf("send ok!\n");
         while((len = recv(sockfd,(void*)msg,sizeof(struct message),MSG_DONTWAIT))!=sizeof(struct message)){
             if(errno ==ECONNRESET){
                 perror("recv error");
@@ -87,7 +87,6 @@ round_robin_scheduling(struct lb_struct *lb_hlist,__u32 cur,struct message *msg,
             }else
                 continue;
         }
-        printf("recv ok!\n");
 
         //printf("len = %d,sizeof struct message = %d\n",len,sizeof(struct message));
         if(msg->msgtype !=TCP_SERV_REPLY){
