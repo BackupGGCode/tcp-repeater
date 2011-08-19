@@ -18,8 +18,10 @@ connect_nonb(int sockfd, const struct  sockaddr *saptr, socklen_t salen, int nse
 
 	/* Do whatever we want while the connect is taking place. */
 
-	if (n == 0)
+	if (n == 0){
+        printf("connect completed imediately\n");
 		goto done;	/* connect completed immediately */
+    }
 
 	FD_ZERO(&rset);
 	FD_SET(sockfd, &rset);
@@ -29,9 +31,10 @@ connect_nonb(int sockfd, const struct  sockaddr *saptr, socklen_t salen, int nse
 	if ( (n = select(sockfd+1, &rset, &wset, NULL,
 					 nsec ? &tval : NULL)) == 0) {
 		close(sockfd);		/* timeout */
+        printf("connect timeout....\n");
 		errno = ETIMEDOUT;
 		return(-2);
-	}
+    }	
 	if (FD_ISSET(sockfd, &rset) || FD_ISSET(sockfd, &wset)) {
 		len = sizeof(error);
 		if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
