@@ -36,8 +36,10 @@ connect_nonb(int sockfd, const struct  sockaddr *saptr, socklen_t salen, int nse
 		len = sizeof(error);
 		if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
 			return(-1);			/* Solaris pending error */
-	} else
-		err_quit("select error: sockfd not set");
+	} else{
+		printf("select error: sockfd not set");
+        return -2;
+    }
 
 done:
 	fcntl(sockfd, F_SETFL, flags);	/* restore file status flags */
