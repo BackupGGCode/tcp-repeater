@@ -30,7 +30,7 @@ connect_nonb(int sockfd, const struct  sockaddr *saptr, socklen_t salen, int nse
 					 nsec ? &tval : NULL)) == 0) {
 		close(sockfd);		/* timeout */
 		errno = ETIMEDOUT;
-		return(-1);
+		return(-2);
 	}
 	if (FD_ISSET(sockfd, &rset) || FD_ISSET(sockfd, &wset)) {
 		len = sizeof(error);
@@ -38,7 +38,7 @@ connect_nonb(int sockfd, const struct  sockaddr *saptr, socklen_t salen, int nse
 			return(-1);			/* Solaris pending error */
 	} else{
 		printf("select error: sockfd not set");
-        return -2;
+        return -3;
     }
 
 done:
@@ -47,7 +47,7 @@ done:
 	if (error) {
 		close(sockfd);		/* just in case */
 		errno = error;
-		return(-1);
+		return(-4);
 	}
 	return(0);
 }

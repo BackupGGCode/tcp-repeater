@@ -24,7 +24,9 @@ send_request(void *arg){
             perror("setsockopt error");
             pthread_exit(NULL);
         }
-        if(connect_nonb(sockfd,(struct sockaddr*)&serv,sizeof(struct sockaddr_in),10)<0){
+        int result ;
+        if((result = connect_nonb(sockfd,(struct sockaddr*)&serv,sizeof(struct sockaddr_in),10))<0){
+            printf("result = %d\n",result);
             printf("connect timeout\n");
             pthread_exit(NULL);
         }
