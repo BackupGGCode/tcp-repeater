@@ -34,7 +34,8 @@ connect_nonb(int sockfd, const struct  sockaddr *saptr, socklen_t salen, int nse
         printf("connect timeout....\n");
 		errno = ETIMEDOUT;
 		return(-2);
-    }	
+    }
+    printf("n = %d\n",n);
 	if (FD_ISSET(sockfd, &rset) || FD_ISSET(sockfd, &wset)) {
 		len = sizeof(error);
 		if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
@@ -50,6 +51,7 @@ done:
 	if (error) {
 		close(sockfd);		/* just in case */
 		errno = error;
+        perror("what error");
 		return(-4);
 	}
 	return(0);
