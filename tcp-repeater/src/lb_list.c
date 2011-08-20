@@ -51,11 +51,15 @@ round_robin_scheduling(struct lb_struct *lb_hlist,__u32 cur,struct message *msg,
         perror("socket error");
         return -1;
     }
-    int err = setsockopt(sockfd,SOL_SOCKET,SO_REUSEADDR,&optval,sizeof(optval));
-    if(err){
-        perror("setsockopt error");
-        return -1;
-    }
+    Setsockopt(sockfd,SOL_SOCKET,SO_REUSEADDR,&optval,sizeof(optval));
+	Setsockopt(sockfd,SOL_SOCKET,SO_KEEPALIVE,&optval,sizeof(optval));
+	double value;
+	value = 0.30;
+	Setsockopt(sockfd,SOL_TCP,TCP_KEEPCNT,&value,sizeof(value));
+	Setsockopt(sockfd,SOL_TCP,TCP_KEEPIDLE,&value,sizeof(value));
+	optval = 2;
+	Setsockopt(sockfd,SOL_TCP,TCP_KEEPINTVL,&optval,sizeof(optval));
+
     bzero(&servaddr,sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(TCP_PORT);
