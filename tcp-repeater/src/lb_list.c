@@ -36,8 +36,8 @@ int is_normal(struct lb_struct *lb_hlist,int id){
     }else{
         return 0;
     }
-
 }
+
 /*
    the round robin scheduling method
 */
@@ -51,14 +51,13 @@ round_robin_scheduling(struct lb_struct *lb_hlist,__u32 cur,struct message *msg,
         perror("socket error");
         return -1;
     }
-    Setsockopt(sockfd,SOL_SOCKET,SO_REUSEADDR,&optval,sizeof(optval));
-	Setsockopt(sockfd,SOL_SOCKET,SO_KEEPALIVE,&optval,sizeof(optval));
-	double value;
-	value = 0.30;
-	Setsockopt(sockfd,SOL_TCP,TCP_KEEPCNT,&value,sizeof(value));
-	Setsockopt(sockfd,SOL_TCP,TCP_KEEPIDLE,&value,sizeof(value));
+    Setsockopt(sockfd,SOL_SOCKET,SO_REUSEADDR,(const void*)&optval,sizeof(optval));
+	Setsockopt(sockfd,SOL_SOCKET,SO_KEEPALIVE,(const void *)&optval,sizeof(optval));
+	int value = 1;
+	Setsockopt(sockfd,SOL_TCP,TCP_KEEPCNT,(const void*)&value,sizeof(value));
+	Setsockopt(sockfd,SOL_TCP,TCP_KEEPIDLE,(const void*)&value,sizeof(value));
 	optval = 2;
-	Setsockopt(sockfd,SOL_TCP,TCP_KEEPINTVL,&optval,sizeof(optval));
+	Setsockopt(sockfd,SOL_TCP,TCP_KEEPINTVL,(const void*)&optval,sizeof(optval));
 
     bzero(&servaddr,sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
@@ -68,12 +67,10 @@ round_robin_scheduling(struct lb_struct *lb_hlist,__u32 cur,struct message *msg,
     addr.s_addr = lb_hlist[cur].ipaddr;
     printf("choose the machine:%s\n",inet_ntoa(addr));
     if(connect_nonb(sockfd,(struct sockaddr*)&servaddr,sizeof(servaddr),TIME_OUT)<0){
-        perror("connect error");
         close(sockfd);
         return -2;
 
     }
-    printf("connect ok!\n");
     while(1){
         /*while(send(sockfd,msg,sizeof(struct message),0)!=sizeof(struct message)){
             continue;
