@@ -19,7 +19,6 @@ connect_nonb(int sockfd, const struct  sockaddr *saptr, socklen_t salen, int nse
 	/* Do whatever we want while the connect is taking place. */
 
 	if (n == 0){
-        printf("connect completed imediately\n");
 		goto done;	/* connect completed immediately */
     }
 

@@ -19,6 +19,7 @@
 
 //#include<asm/atomic.h>
 #define HEARTBEAT_RATE  5	
+#define TIME_OUT        5 
 #define UDP_PORT		16666
 #define TCP_PORT		16665
 #define SERV_PORT		16664
