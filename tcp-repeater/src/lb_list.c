@@ -66,11 +66,14 @@ round_robin_scheduling(struct lb_struct *lb_hlist,__u32 cur,struct message *msg,
     struct in_addr addr;
     addr.s_addr = lb_hlist[cur].ipaddr;
     printf("choose the machine:%s\n",inet_ntoa(addr));
-    if(connect_nonb(sockfd,(struct sockaddr*)&servaddr,sizeof(servaddr),TIME_OUT)<0){
+    //if(connect_nonb(sockfd,(struct sockaddr*)&servaddr,sizeof(servaddr),100)<0){
+    if(connect(sockfd,(struct sockaddr*)&servaddr,sizeof(servaddr))<0){
+        perror("connect error");
         close(sockfd);
         return -2;
 
     }
+    printf("connect ok!\n");
     while(1){
         /*while(send(sockfd,msg,sizeof(struct message),0)!=sizeof(struct message)){
             continue;
@@ -81,6 +84,7 @@ round_robin_scheduling(struct lb_struct *lb_hlist,__u32 cur,struct message *msg,
         if(len !=sizeof(struct message)){
             continue;
         }
+        printf("send ok!\n");
         while((len = recv(sockfd,(void*)msg,sizeof(struct message),MSG_DONTWAIT))!=sizeof(struct message)){
             if(errno ==ECONNRESET){
                 perror("recv error");
@@ -94,6 +98,7 @@ round_robin_scheduling(struct lb_struct *lb_hlist,__u32 cur,struct message *msg,
             printf("receive TCP_SERV_REPLY  message error,it is %d\n",msg->msgtype);
             continue;
         }
+        
         while(send(connfd,msg,sizeof(struct message),0)!=sizeof(struct message)){
             continue;  
         }

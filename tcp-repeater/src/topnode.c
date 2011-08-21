@@ -91,6 +91,8 @@ schedule(struct topnode *traffic_serv,in_addr_t srcaddr,struct message *msg,int 
         cur_node = traffic_serv->cur;
         while(!is_normal(traffic_serv->lb_hlist,traffic_serv->cur)){
             traffic_serv->cur = (traffic_serv->cur +1)% traffic_serv->hash_size;
+            if(!is_normal(traffic_serv->lb_hlist,traffic_serv->cur))
+                continue;
             if(cur_node ==traffic_serv->cur){
                 printf("no server to service!\n");
                 Pthread_mutex_unlock(&(traffic_serv->cur_lock));

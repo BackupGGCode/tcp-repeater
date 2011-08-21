@@ -298,6 +298,7 @@ int readPacket(struct childnode *child,int connfd){
                 printf("receive TCP_FAULT_QUERY message\n");
                 msg->msgtype = TCP_FAULT_QUERY_ACK;
                 Send(connfd,msg,sizeof(struct message),0);
+                printf("send  TCP_FAULT_QUERY_ACK message\n");
                 break;
             case TCP_SERV:
                 printf("receive TCP_SERV message\n");
