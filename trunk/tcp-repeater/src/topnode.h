@@ -48,7 +48,7 @@ void print_lb_tree(struct topnode *traffic_serv);
 */
 in_addr_t schedule(struct topnode *traffic_serv,in_addr_t srcaddr,struct message *msg,int connfd);
 
-void select_tcpserver(struct topnode * traffic_serv,int tcp_listenfd);
+void epoll_tcpserver(struct topnode * traffic_serv,int tcp_listenfd);
 /*
    heartbeat message handler
 */
