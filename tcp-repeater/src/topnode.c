@@ -136,12 +136,12 @@ receive_heartbeat(struct topnode *traffic_serv,__u32 id){
 /*
    the tcp message handler of frontend machine
 */
-int receive_tcp_message(struct topnode* traffic_serv,int connfd,in_addr_t srcaddr){
+int receive_tcp_message(struct topnode* traffic_serv,int connfd){
     char buf[PACKET_LEN];
     int len;
     struct message *msg;
     struct in_addr addr;
-    addr.s_addr = srcaddr;
+	int srcaddr;
     for(;;){
         len = Recv(connfd,(void*)buf,PACKET_LEN,0);
         if(len <=0){
@@ -149,6 +149,7 @@ int receive_tcp_message(struct topnode* traffic_serv,int connfd,in_addr_t srcadd
             return 0;
         }
         msg = (struct message*)buf;
+		srcaddr = addr.s_addr = (msg->info).srcNode;
         switch(msg->msgtype){
             case TCP_ACTIVATION:
                 printf("receive TCP_ACTIVATION message from %s\n",inet_ntoa(addr));
@@ -232,78 +233,66 @@ monitor_process(void * arg){
         perror("listen error");
         exit(1);
     }
-	select_tcpserver(traffic_serv,tcp_listenfd);
+	epoll_tcpserver(traffic_serv,tcp_listenfd);
     return NULL;
 }
 
-void select_tcpserver(struct topnode * traffic_serv,int tcp_listenfd){
-	int maxfd,maxIndex,i;
-	fd_set rset,allset;
+void epoll_tcpserver(struct topnode * traffic_serv,int listenfd){
+	int epfd,i;
 	struct sockaddr_in cliaddr;
-    struct timeval timeout;
-    struct in_addr addr;
-	int clilen;
-	int *client =(int *)malloc(sizeof(int) * traffic_serv->client_size);
-	int *client_addr = (int *)malloc(sizeof(int) * traffic_serv->client_size);
-	FD_ZERO(&rset);
-	FD_ZERO(&allset);
-	FD_SET(tcp_listenfd,&allset);
-	maxfd = tcp_listenfd +1;
-	maxIndex =0;
-	for(i=0;i<traffic_serv->client_size;i++)
-		client[i]=-1;
-	int nready;
-	for(;;){
-        timeout.tv_sec = 2;
-        timeout.tv_usec = 0;
-		rset = allset;
-		nready = select(maxfd+1,&rset,NULL,NULL,&timeout);
-        if(nready <=0)
-            continue;
-        printf("select over,nready = %d\n",nready);
-		if(FD_ISSET(tcp_listenfd,&rset)){
-			clilen = sizeof(struct sockaddr_in);
-			int connfd = accept(tcp_listenfd,(struct sockaddr*)&cliaddr,(socklen_t*)&clilen);
-            addr.s_addr = cliaddr.sin_addr.s_addr;
-            printf("get connection from %s\n",inet_ntoa(addr));
-			if(connfd <0){
-				perror("accept error");
-				continue;
-			}
-			for(i=0;i<traffic_serv->client_size;i++){
-				if(client[i]==-1)
-					break;
-			}
-			if(i==traffic_serv->client_size){
-				printf("too few client buffer!\n");
-				return ;
-			}
-			client[i]= connfd;
-			client_addr[i] = cliaddr.sin_addr.s_addr;
-			if(connfd > maxfd)
-				maxfd = connfd;
-			if( i > maxIndex)
-				maxIndex = i;
-			FD_SET(connfd,&allset);
-			if(--nready <=0)
-				continue;
-		}//if over
-		for(i=0;i<=maxIndex;i++){
-			if(client[i]==-1)
-				continue;
-			if(FD_ISSET(client[i],&rset)){
-				int flag = receive_tcp_message(traffic_serv,client[i],client_addr[i]);	
-                if(flag ==0){
-                    close(client[i]);
-                    FD_CLR(client[i],&allset);
-                    client[i]=-1;
-                }
-                nready--;
-                if(nready<=0)
-                    break;
-			}
-		}//for over
+	int clilen = sizeof(cliaddr);
+	struct epoll_event ev;
+	struct epoll_event *events =  (struct epoll_event*)malloc(sizeof(struct epoll_event) * traffic_serv->client_size);
+	epfd = epoll_create(10);
+	ev.events = EPOLLIN;
+	ev.data.fd = listenfd;
+	if(epoll_ctl(epfd,EPOLL_CTL_ADD,listenfd,&ev)<0){
+		perror("epoll_ctl error");
+		return ;
 	}
+	int nready;
+	for(;;){ // try blocking model
+		nready = epoll_wait(epfd,events,traffic_serv->client_size,-1);
+		if(nready < 0){
+			perror("epoll_wait error");
+			return ;
+		}
+		for(i=0;i<nready;i++){
+			if(events[i].data.fd == listenfd){	//have new connection
+				int connfd = accept(listenfd,(struct sockaddr*) &cliaddr,(socklen_t *)&clilen);
+				if(connfd <0){
+					perror("accept error");
+					continue;
+				}
+				ev.data.fd = connfd;
+				ev.events = EPOLLIN;
+				if(epoll_ctl(epfd,EPOLL_CTL_ADD,connfd,&ev)<0){
+					perror("epoll error");
+					continue;
+				}
+
+			}else if(events[i].events & EPOLLIN){		// new data
+				int connfd = events[i].data.fd;
+				int flag = receive_tcp_message(traffic_serv,connfd);
+				if(flag ==0){
+					printf("connection over!\n");
+					close(connfd);
+					epoll_ctl(epfd,EPOLL_CTL_DEL,connfd,events+i);
+				}
+				
+			}else if(events[i].events & EPOLLERR){
+				printf("connection error\n");
+				close(events[i].data.fd);
+				epoll_ctl(epfd,EPOLL_CTL_DEL,events[i].data.fd,events+i);
+
+			}// for else if
+
+		}//for for(i=;
+
+	}//for for(;;)
+
+
+	return ;
 }
 
 /***************process udp message****************/
