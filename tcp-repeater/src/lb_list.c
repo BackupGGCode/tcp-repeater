@@ -85,6 +85,7 @@ round_robin_scheduling(struct lb_struct *lb_hlist,__u32 cur,struct message *msg,
         }
         printf("send ok!\n");
         while((len = recv(sockfd,(void*)msg,sizeof(struct message),MSG_DONTWAIT))!=sizeof(struct message)){
+            perror("recv error");
             if(errno ==ECONNRESET){
                 perror("recv error");
                 return -2;

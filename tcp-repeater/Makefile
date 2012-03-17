@@ -3,7 +3,7 @@
 CC=gcc
 CFLAGS=-Wall -g
 
-target =server client clientnb epollserver selectserver
+target =server simpleclient clientnb epollserver selectserver simpleclient
 #         readn.o  writen.o  \
 #         wrapsock.o wrapstdio.o wrappthread.o wraplib.o \
 #         lb_list.o topnode.o main.o 
@@ -15,6 +15,8 @@ server:error.o realserv.o wrapsock.o wrapstdio.o wrappthread.o wraplib.o lb_list
 clientnb:clientnb.o  connect_nonb.o
 			$(CC) -g $(CFLAGS) $^ -o $@ -lpthread -lxml2
 client:client.o
+			$(CC) -g $(CFLAGS) $^ -o $@ -lpthread -lxml2
+simpleclient:simpleclient.o
 			$(CC) -g $(CFLAGS) $^ -o $@ -lpthread -lxml2
 selectserver:selectServer.o
 			$(CC) -g $(CFLAGS) $^ -o $@ -lpthread -lxml2
