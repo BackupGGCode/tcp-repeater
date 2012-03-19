@@ -32,5 +32,4 @@ epollserver:epollServer.o
 			$(CC) -c $(CFLAGS) $^ -o $@
 clean:
 	rm -rf *.o
- 
 #end
