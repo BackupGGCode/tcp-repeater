@@ -44,8 +44,8 @@ int addNewClient(int listenfd,int * maxfd,int * maxIndex){
     }
     links ++;
     pthread_mutex_unlock(&mutex);
-    if( connfd > *maxfd)
-        *maxfd = connfd;
+    if( connfd >= *maxfd)
+        *maxfd = connfd +1;
     for(i=0;i<=*maxIndex;i++){
         if(client[i]<0){
             client[i] = connfd;
