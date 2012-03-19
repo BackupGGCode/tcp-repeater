@@ -3,7 +3,7 @@
 CC=gcc
 CFLAGS=-Wall -g
 
-target =server simpleclient clientnb epollserver selectserver simpleclient
+target =server client  clientnb epollserver selectserver simpleclient
 #         readn.o  writen.o  \
 #         wrapsock.o wrapstdio.o wrappthread.o wraplib.o \
 #         lb_list.o topnode.o main.o 
@@ -32,4 +32,5 @@ epollserver:epollServer.o
 			$(CC) -c $(CFLAGS) $^ -o $@
 clean:
 	rm -rf *.o
+	rm $(target)
 #end
